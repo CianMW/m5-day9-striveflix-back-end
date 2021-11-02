@@ -146,7 +146,7 @@ if(req.params,id){
 }
 })
 mediaRouter.put("/:id", async (req, res, next) => {
-if(req.params,id){
+if(req.params.id){
  const allMedia = getMedia()
  const filteredMedia = allMedia.filter(media => media.imdbID !== req.params.id)
  writeMediaToFile(filteredMedia)
