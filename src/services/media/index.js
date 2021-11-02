@@ -145,10 +145,22 @@ if(req.params,id){
  writeMediaToFile(filteredMedia)
 }
 })
+
+//for editing media
 mediaRouter.put("/:id", async (req, res, next) => {
 if(req.params.id){
  const allMedia = getMedia()
- const filteredMedia = allMedia.filter(media => media.imdbID !== req.params.id)
+ const filteredMedia = allMedia.indexOf(media => media.imdbID === req.params.id)
+ if (filteredMedia !== -1){
+  const editedObject = {...filteredMedia, ...req.body}
+  allMedia[filteredMedia] = editedObject
+  await writeMediaToFile(allMedia)
+  res.status(204).send("update complete")
+ } else {
+   next(404)
+
+  }
+
  writeMediaToFile(filteredMedia)
 }
 })
