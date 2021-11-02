@@ -10,7 +10,7 @@ import {
   writeReviewsToFile,
 } from "../../lib/f-tools.js";
 import { Console } from "console";
-
+import { send } from "process";
 
 const mediaRouter = express.Router();
 /* 
@@ -63,30 +63,33 @@ mediaRouter.get("/query/", async (req, res, next) => {
           let data = await response.json();
           if (data.Search) {
             //here place what happens to the data from the OMDBAPI search
-             console.log("HERE IS THE DATA",data);
-             const newMedia = []
+            console.log("HERE IS THE DATA", data);
+            const newMedia = [];
 
-            media.forEach(media => {
-                const newRecord = data.Search.filter(record => record.imdbID !== media.imdbID)
-                console.log("here's the media under the filter", media)
-                console.log(newRecord)
-                if(newRecord.length > 0 ){
-                   newRecord.forEach(element => {
-                       newMedia.push(element)
-                   });
+            if (foundMedia.length > 0 && data.Search.length > 0) {
+              foundMedia.forEach((media) => {
+                const newRecord = data.Search.filter(
+                  (record) => record.imdbID !== media.imdbID
+                );
+                console.log("here's the media under the filter", media);
+                console.log(newRecord);
+                if (newRecord.length > 0) {
+                  newRecord.forEach((element) => {
+                    newMedia.push(element);
+                  });
                 }
-                 
-             });
+              });
+            } else if (data.Search.length > 0) {
+              data.Search.forEach((media) => newMedia.push(media));
+            }
 
+            console.log("HERE IS THE NEWMEDIA ARRAY", newMedia);
+            if (newMedia.length > 0) {
+              const mediaToWrite = media.concat(newMedia);
+              writeMediaToFile(mediaToWrite);
+            }
 
-             console.log("HERE IS THE NEWMEDIA ARRAY", newMedia)
-             if(newMedia.length > 0) {
-               const mediaToWrite =  media.concat(newMedia)
-                writeMediaToFile(mediaToWrite)
-             }
-             
-
-            res.send(data.Search[0])
+            res.send(data.Search[0]);
           }
         }
       }
@@ -98,4 +101,76 @@ mediaRouter.get("/query/", async (req, res, next) => {
   }
 });
 
+mediaRouter.post("/", async (req, res, next) => {
+  const allMedia = await getMedia();
+  const existsCheck = allMedia.filter((media) => media.imdbID === req.imdbID);
+  if (existsCheck.length > 0) {
+    next(403);
+  } else {
+    try {
+      const allMedia = await getMedia();
+      const newMedia = { ...req.body, _id: uniqid() };
+      console.log("this is the new media", newMedia);
+      allMedia.push(newMedia);
+      writeMediaToFile(allMedia);
+      res.status(200).send(`new content created ID: ${newMedia._id}`);
+    } catch (error) {
+      next(error);
+    }
+  }
+});
+
+//needs testing
+mediaRouter.get("/single/:id", async (req, res, next) => {
+  try {
+    const media = await getMedia();
+    const filteredMedia = media.filter(media => media.imdbID === req.params.id)
+
+    if (filteredMedia) {
+      console.log(media);
+      const allReviews = await getReviews()
+      const foundReviews = allReviews.filter(review => review,elementId === filteredMedia.imdbID)
+      filteredMedia.reviews = {...foundReviews}
+      res.status(200).send(filteredMedia);
+    } else next(error);
+  } catch (error) {
+    next(error);
+  }
+});
+
+mediaRouter.delete("/:id", async (req, res, next) => {
+if(req.params,id){
+ const allMedia = getMedia()
+ const filteredMedia = allMedia.filter(media => media.imdbID !== req.params.id)
+ writeMediaToFile(filteredMedia)
+}
+})
+mediaRouter.put("/:id", async (req, res, next) => {
+if(req.params,id){
+ const allMedia = getMedia()
+ const filteredMedia = allMedia.filter(media => media.imdbID !== req.params.id)
+ writeMediaToFile(filteredMedia)
+}
+})
+
+
 export default mediaRouter;
+
+// GET Media (list) (reviews included)
+
+// GET Media (single) (with reviews)
+
+// UPDATE Media
+// DELETE Media
+
+// /media/:id/poster
+
+// POST Poster to single media
+
+// /media/:id/reviews
+
+// POST Review to media
+
+// DELETE Review of media
+
+// /media/:id/pdf
